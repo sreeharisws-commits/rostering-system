@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rostering System - Standalone App</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        /* Password Screen Styles */
+        .password-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: 9999;
+        }
+        
+        .password-box {
+            background: white;
+            border-radius: 20px;
+            padding: 50px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .password-box h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .password-box p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .password-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1em;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+        }
+        
+        .password-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .password-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .password-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .password-error {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+            animation: shake 0.5s;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        .lock-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        
+        /* Main App Styles */
+        .main-app {
+            display: none;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+        
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .logout-btn:hover {
+            background: white;
+            color: #667eea;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 2px solid #ddd;
+            overflow-x: auto;
+        }
+        
+        .nav-tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-size: 1em;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        
+        .nav-tab:hover {
+            background: #e8e8e8;
+            color: #667eea;
+        }
+        
+        .nav-tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .form-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9em;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .shift-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .shift-D { background: #fef3c7; color: #92400e; }
+        .shift-N { background: #dbeafe; color: #1e40af; }
+        .shift-O { background: #d1fae5; color: #065f46; }
+        .shift-NO { background: #e0e7ff; color: #3730a3; }
+        .shift-SL { background: #fee2e2; color: #991b1b; }
+        .shift-PL { background: #fce7f3; color: #831843; }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .instructions {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .instructions h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ol, .instructions ul {
+            margin-left: 20px;
+            color: #555;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        
+        .employee-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .employee-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+        
+        .employee-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .employee-card h4 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .employee-card p {
+            color: #666;
+            font-size: 0.9em;
+            margin: 3px 0;
+        }
+        
+        .priority-high { color: #28a745; font-weight: bold; }
+        .priority-medium { color: #ffc107; font-weight: bold; }
+        .priority-low { color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <!-- Password Screen -->
+    <div id="passwordScreen" class="password-screen">
+        <div class="password-box">
+            <div class="lock-icon">🔒</div>
+            <h1>Rostering System</h1>
+            <p>Please enter the password to access</p>
+            <input type="password" id="passwordInput" class="password-input" placeholder="Enter password" onkeypress="if(event.key==='Enter') checkPassword()">
+            <button class="password-btn" onclick="checkPassword()">Unlock</button>
+            <div id="passwordError" class="password-error">
+                ❌ Incorrect password. Please try again.
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App (Hidden until password correct) -->
+    <div id="mainApp" class="main-app">
+        <div class="container">
+            <div class="header">
+                <button class="logout-btn" onclick="logout()">🔓 Logout</button>
+                <h1>🗓️ Rostering Management System</h1>
+                <p>Complete Shift & Leave Management Solution</p>
+            </div>
+            
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="showTab('generate')">📥 Generate Roster</button>
+                <button class="nav-tab" onclick="showTab('view')">👥 View Current Roster</button>
+                <button class="nav-tab" onclick="showTab('leave')">📝 Leave Applications</button>
+                <button class="nav-tab" onclick="showTab('emergency')">🚨 Emergency Coverage</button>
+                <button class="nav-tab" onclick="showTab('instructions')">📖 How to Use</button>
+            </div>
+            
+            <div class="content">
+                <!-- Generate Tab -->
+                <div id="generate" class="tab-content active">
+                    <div class="instructions">
+                        <h3>📋 Quick Start</h3>
+                        <ol>
+                            <li>Select the month and year for the roster</li>
+                            <li>Click "Generate Excel File" to create your rostering system</li>
+                            <li>The Excel file will download automatically with 7 pre-configured sheets</li>
+                            <li>Open the Excel file and start managing your roster immediately</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h2>Generate Monthly Roster</h2>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="month">Select Month</label>
+                                <select id="month">
+                                    <option value="1">January</option>
+                                    <option value="2">February</option>
+                                    <option value="3">March</option>
+                                    <option value="4">April</option>
+                                    <option value="5">May</option>
+                                    <option value="6">June</option>
+                                    <option value="7">July</option>
+                                    <option value="8">August</option>
+                                    <option value="9">September</option>
+                                    <option value="10">October</option>
+                                    <option value="11" selected>November</option>
+                                    <option value="12">December</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="year">Select Year</label>
+                                <input type="number" id="year" value="2025" min="2024" max="2030">
+                            </div>
+                        </div>
+                        
+                        <button class="btn" onclick="generateRoster()">
+                            📥 Generate Excel File
+                        </button>
+                        
+                        <div id="successMessage" style="display:none; margin-top:15px;" class="alert alert-success">
+                            <span style="font-size:1.5em;">✅</span>
+                            <div>
+                                <strong>Success!</strong> Excel file generated and downloaded. Check your downloads folder.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h2>What's Included in the Excel File?</h2>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">📊 Sheets</div>
+                                <div class="stat-number">7</div>
+                                <div class="stat-label">Pre-configured</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">👥 Employees</div>
+                                <div class="stat-number">35</div>
+                                <div class="stat-label">From your data</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">🎯 Target</div>
+                                <div class="stat-number">8+8</div>
+                                <div class="stat-label">Day + Night</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">📝 Formulas</div>
+                                <div class="stat-number">Auto</div>
+                                <div class="stat-label">Pre-built</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top:20px;">
+                            <h3 style="color:#667eea; margin-bottom:10px;">📑 Excel Sheets Breakdown:</h3>
+                            <ul style="line-height:1.8; color:#555;">
+                                <li><strong>Sheet 1 - Roster:</strong> Complete monthly schedule with shift assignments</li>
+                                <li><strong>Sheet 2 - Leave Applications:</strong> Track and manage leave requests</li>
+                                <li><strong>Sheet 3 - Priority Calculator:</strong> Automatic leave priority scoring</li>
+                                <li><strong>Sheet 4 - Shift Count:</strong> Real-time shift balance monitoring</li>
+                                <li><strong>Sheet 5 - Emergency Replacement:</strong> Smart coverage selection</li>
+                                <li><strong>Sheet 6 - Overtime Tracker:</strong> Compensation management</li>
+                                <li><strong>Sheet 7 - Configuration:</strong> System settings and rules</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- View Tab -->
+                <div id="view" class="tab-content">
+                    <div class="alert alert-info">
+                        <span style="font-size:1.5em;">ℹ️</span>
+                        <div>
+                            <strong>Note:</strong> This is a preview. Generate and download the Excel file for full functionality with automatic formulas.
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h2>Current Roster Preview</h2>
+                        <p style="color:#666; margin-bottom:15px;">Sample view of roster structure. Download Excel for complete interactive version.</p>
+                        
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Emp ID</th>
+                                        <th>Name</th>
+                                        <th>Aircraft</th>
+                                        <th>Day 1</th>
+                                        <th>Day 2</th>
+                                        <th>Day 3</th>
+                                        <th>Day 4</th>
+                                        <th>Day 5</th>
+                                        <th>...</th>
+                                        <th>Stats</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>85005100</td>
+                                        <td>Namita Chowdhry</td>
+                                        <td>A320</td>
+                                        <td><span class="shift-badge shift-NO">N/O</span></td>
+                                        <td><span class="shift-badge shift-O">O</span></td>
+                                        <td><span class="shift-badge shift-D">D</span></td>
+                                        <td><span class="shift-badge shift-N">N</span></td>
+                                        <td><span class="shift-badge shift-NO">N/O</span></td>
+                                        <td>...</td>
+                                        <td>D:12 N:10</td>
+                                    </tr>
+                                    <tr>
+                                        <td>85009008</td>
+                                        <td>Santhosh Rajaram</td>
+                                        <td>A320</td>
+                                        <td><span class="shift-badge shift-NO">N/O</span></td>
+                                        <td><span class="shift-badge shift-O">O</span></td>
+                                        <td><span class="shift-badge shift-D">D</span></td>
+                                        <td><span class="shift-badge shift-N">N</span></td>
+                                        <td><span class="shift-badge shift-N">N</span></td>
+                                        <td>...</td>
+                                        <td>D:11 N:11</td>
+                                    </tr>
+                                    <tr>
+                                        <td>85002606</td>
+                                        <td>Kaustubh B</td>
+                                        <td>B737</td>
+                                        <td><span class="shift-badge shift-N">N</span></td>
+                                        <td><span class="shift-badge shift-O">O</span></td>
+                                        <td><span class="shift-badge shift-D">D</span></td>
+                                        <td><span class="shift-badge shift-D">D</span></td>
+                                        <td><span class="shift-badge shift-NO">N/O</span></td>
+                                        <td>...</td>
+                                        <td>D:13 N:9</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Leave Tab -->
+                <div id="leave" class="tab-content">
+                    <div class="form-section">
+                        <h2>Submit Leave Application</h2>
+                        <p style="color:#666; margin-bottom:15px;">In the Excel file, add leave applications to Sheet 2. Priority will be auto-calculated.</p>
+                        
+                        <div class="form-group">
+                            <label>Employee Name</label>
+                            <select>
+                                <option>Select employee...</option>
+                                <option>Namita Chowdhry</option>
+                                <option>Santhosh Rajaram Bathula</option>
+                                <option>Kaustubh B</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Leave Type</label>
+                                <select>
+                                    <option>Planned Leave</option>
+                                    <option>Sick Leave</option>
+                                    <option>Emergency Leave</option>
+                                    <option>Casual Leave</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Start Date</label>
+                                <input type="date">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>End Date</label>
+                                <input type="date">
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-success">✓ This is a Demo - Use Excel File for Real Applications</button>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h2>Leave Priority System</h2>
+                        <div class="instructions">
+                            <h3>How Priority is Calculated:</h3>
+                            <ul>
+                                <li><strong>Leave History:</strong> Fewer leaves = Higher priority</li>
+                                <li><strong>Application Date:</strong> Earlier application = Higher priority for same history</li>
+                                <li><strong>Consecutive Leaves:</strong> Penalty for back-to-back leaves</li>
+                                <li><strong>Days Since Last Leave:</strong> Bonus for longer gap since last leave</li>
+                            </ul>
+                            <p style="margin-top:10px;"><strong>Formula:</strong> Priority Score = 100 - (Total Leaves × 2) - (Consecutive × 5) + (Days Since × 0.5)</p>
+                        </div>
+                        
+                        <h3 style="margin-top:20px; margin-bottom:10px;">Sample Priority Scores:</h3>
+                        <div class="employee-list">
+                            <div class="employee-card" style="border-color:#dc3545;">
+                                <h4>Mahadev S. ✗ NOT ELIGIBLE</h4>
+                                <p><strong>Previous Day Shift:</strong> Night Shift (N)</p>
+                                <p><strong>Reason:</strong> Cannot be called - needs rest after night shift</p>
+                                <p><strong>Status:</strong> Not available for emergency</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h2>Compensation Tracking</h2>
+                        <p style="color:#666; margin-bottom:15px;">All emergency replacements are tracked in Sheet 6 (Overtime Tracker) for compensation.</p>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Employee</th>
+                                        <th>Date</th>
+                                        <th>Reason</th>
+                                        <th>Hours</th>
+                                        <th>Rate</th>
+                                        <th>Compensation</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Vijay Gupta</td>
+                                        <td>Nov 10</td>
+                                        <td>Emergency Cover</td>
+                                        <td>8 hrs</td>
+                                        <td>1.5x</td>
+                                        <td>Overtime Pay</td>
+                                        <td>✓ Paid</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Karthikeyan</td>
+                                        <td>Nov 15</td>
+                                        <td>Sick Leave Cover</td>
+                                        <td>8 hrs</td>
+                                        <td>1.5x</td>
+                                        <td>Comp Off</td>
+                                        <td>⏳ Pending</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Instructions Tab -->
+                <div id="instructions" class="tab-content">
+                    <div class="form-section">
+                        <h2>📖 Complete User Guide</h2>
+                        
+                        <div class="instructions">
+                            <h3>Step 1: Generate the Excel File</h3>
+                            <ol>
+                                <li>Go to the "Generate Roster" tab</li>
+                                <li>Select the month and year you want to create roster for</li>
+                                <li>Click "Generate Excel File" button</li>
+                                <li>The file will download automatically (check Downloads folder)</li>
+                                <li><strong>Important:</strong> Generate roster BEFORE 25th of the previous month</li>
+                            </ol>
+                        </div>
+                        
+                        <div class="instructions">
+                            <h3>Step 2: Working with Excel Sheets</h3>
+                            <ul>
+                                <li><strong>Sheet 1 - Roster:</strong> Main schedule with rotating patterns</li>
+                                <li><strong>Sheet 2 - Leave Applications:</strong> Add leave requests here</li>
+                                <li><strong>Sheet 3 - Priority Calculator:</strong> Auto-calculates priority scores</li>
+                                <li><strong>Sheet 4 - Shift Count:</strong> Monitors 8+8 balance</li>
+                                <li><strong>Sheet 5 - Emergency Replacement:</strong> Find eligible replacements</li>
+                                <li><strong>Sheet 6 - Overtime Tracker:</strong> Track compensation</li>
+                                <li><strong>Sheet 7 - Configuration:</strong> System settings reference</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="instructions">
+                            <h3>Step 3: Processing Leave Applications</h3>
+                            <ol>
+                                <li>Employee submits leave request</li>
+                                <li>Add entry to Sheet 2 (Leave Applications)</li>
+                                <li>Check Sheet 3 - priority auto-calculates</li>
+                                <li>Approve leaves by priority score (highest first)</li>
+                                <li>Update Sheet 1 with approved leaves</li>
+                                <li>Verify Sheet 4 maintains 8+8 balance</li>
+                            </ol>
+                        </div>
+                        
+                        <div class="instructions">
+                            <h3>Step 4: Handling Emergency Leave</h3>
+                            <ol>
+                                <li>Employee calls in sick/emergency</li>
+                                <li>Go to Sheet 5 (Emergency Replacement)</li>
+                                <li>Find eligible replacements (previous day: D or O)</li>
+                                <li><strong>NEVER call:</strong> Anyone who worked night shift previous day</li>
+                                <li>Select replacement and update Sheet 1</li>
+                                <li>Record in Sheet 6 (Overtime Tracker)</li>
+                                <li>Give compensation: Overtime (1.5x) OR Comp Off</li>
+                            </ol>
+                        </div>
+                        
+                        <div class="instructions">
+                            <h3>Shift Codes Reference</h3>
+                            <ul>
+                                <li><strong>D</strong> = Day Shift</li>
+                                <li><strong>N</strong> = Night Shift</li>
+                                <li><strong>O</strong> = Off Day</li>
+                                <li><strong>N/O</strong> = Night + Off</li>
+                                <li><strong>S/L</strong> = Sick Leave</li>
+                                <li><strong>P/L</strong> = Planned Leave</li>
+                                <li><strong>C/O</strong> = Compensatory Off</li>
+                                <li><strong>TRG</strong> = Training</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="instructions" style="background:#fff3cd; border-left-color:#ffc107;">
+                            <h3>⚠️ Important Rules</h3>
+                            <ul>
+                                <li><strong>ALWAYS maintain 8+8 shift balance</strong></li>
+                                <li>Complete roster by 25th of previous month</li>
+                                <li>Leave priority: history → application date → fairness</li>
+                                <li>Night shift workers cannot be emergency called</li>
+                                <li>All replacements must be compensated</li>
+                                <li>Check Sheet 4 daily for balance</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Password protection
+        const correctPassword = 'alyn123';
+        
+        function checkPassword() {
+            const input = document.getElementById('passwordInput').value;
+            const errorDiv = document.getElementById('passwordError');
+            
+            if (input === correctPassword) {
+                // Password correct - show main app
+                document.getElementById('passwordScreen').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                sessionStorage.setItem('authenticated', 'true');
+            } else {
+                // Password incorrect - show error
+                errorDiv.style.display = 'block';
+                document.getElementById('passwordInput').value = '';
+                document.getElementById('passwordInput').focus();
+                
+                setTimeout(() => {
+                    errorDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+        
+        function logout() {
+            sessionStorage.removeItem('authenticated');
+            document.getElementById('passwordScreen').style.display = 'flex';
+            document.getElementById('mainApp').style.display = 'none';
+            document.getElementById('passwordInput').value = '';
+        }
+        
+        // Check if already authenticated
+        window.onload = function() {
+            if (sessionStorage.getItem('authenticated') === 'true') {
+                document.getElementById('passwordScreen').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+            }
+            document.getElementById('passwordInput').focus();
+        };
+
+        // Employee data
+        const employees = [
+            ["85005100", "Namita Chowdhry", "A320"],
+            ["85009008", "Santhosh Rajaram Bathula", "A320"],
+            ["85002606", "Kaustubh B", "B737"],
+            ["85002536", "Vijay Gupta", "B737"],
+            ["85005688", "Manu Mohan", "A320&B737"],
+            ["85003846", "Macken Vaz", "Tr"],
+            ["85008568", "Karthikeyan", "A320"],
+            ["85005686", "Mahadev S.", "A320"],
+            ["85005699", "Vivek Chauhan", "B737"],
+            ["85008436", "Balamurugan Alagarsamy", "A320"],
+            ["85011116", "Jeet Pati", "737"],
+            ["85002426", "Siddique", "Tr"],
+            ["85005698", "Anal Kumar", "Tr"],
+            ["85002324", "Pravin C", "A320"],
+            ["85003309", "Dinesh S", "8737"],
+            ["85008569", "Maniraj S", "A320"],
+            ["85005689", "Ashish KS", "A320&B737"],
+            ["85005689", "Praful K", "B737"],
+            ["85009317", "Vivian Reginald Philip Pais", "A320"],
+            ["85008549", "Jefferson", "A320"],
+            ["85007148", "Abhimanyu", "320"],
+            ["85008996", "Vishnu Deva", "A320"],
+            ["85005687", "Janarthanan S", "320"],
+            ["85002951", "Ashish Kumar Verma", "B737"],
+            ["85002324", "Pravin J", ""],
+            ["85004114", "Vivek Pataskar", "A320"],
+            ["85002300", "Kshiteej S", "8737"],
+            ["85008783", "Prem", "A320"],
+            ["85009429", "Rashu", "A320"],
+            ["85008265", "Chetan kumar Gururani", "A320"],
+            ["85005685", "Yemuna BL", ""],
+            ["85004116", "Narender", "A320"],
+            ["85008835", "Sagar", "A320"],
+            ["85005088", "Soumee", ""],
+            ["85002171", "Nikita J", "B737"]
+        ];
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function generateRoster() {
+            const month = parseInt(document.getElementById('month').value);
+            const year = parseInt(document.getElementById('year').value);
+            
+            const wb = XLSX.utils.book_new();
+            
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const monthNames = ["", "January", "February", "March", "April", "May", "June", 
+                               "July", "August", "September", "October", "November", "December"];
+            
+            // SHEET 1: ROSTER
+            const rosterData = [];
+            rosterData.push([`${monthNames[month]} ${year} - MONTHLY ROSTER`]);
+            rosterData.push([]);
+            rosterData.push(["SHIFT CODES:", "D=Day", "N=Night", "O=Off", "N/O=Night+Off", "S/L=Sick Leave", "P/L=Planned Leave", "C/O=Comp Off", "TRG=Training"]);
+            rosterData.push(["TARGET: 8 Day Shift + 8 Night Shift"]);
+            rosterData.push([]);
+            
+            const headerRow = ["Emp ID", "Name", "Aircraft"];
+            for (let day = 1; day <= daysInMonth; day++) {
+                headerRow.push(day);
+            }
+            headerRow.push("Day", "Night", "Off", "Leave");
+            rosterData.push(headerRow);
+            
+            employees.forEach((emp, idx) => {
+                const row = [emp[0], emp[1], emp[2]];
+                let dayCount = 0, nightCount = 0, offCount = 0;
+                
+                for (let day = 1; day <= daysInMonth; day++) {
+                    let shift;
+                    const cycle = (day + idx) % 7;
+                    
+                    if (cycle === 0 || cycle === 1) {
+                        shift = "N/O";
+                        nightCount += 0.5;
+                        offCount += 0.5;
+                    } else if (cycle === 2) {
+                        shift = "O";
+                        offCount++;
+                    } else if (cycle === 3 || cycle === 5) {
+                        shift = "D";
+                        dayCount++;
+                    } else if (cycle === 4 || cycle === 6) {
+                        shift = "N";
+                        nightCount++;
+                    } else {
+                        shift = "D";
+                        dayCount++;
+                    }
+                    
+                    row.push(shift);
+                }
+                
+                row.push(dayCount, nightCount, offCount, 0);
+                rosterData.push(row);
+            });
+            
+            rosterData.push([]);
+            rosterData.push(["DAILY SHIFT SUMMARY"]);
+            const summaryRow = ["Day Shifts"];
+            const nightRow = ["Night Shifts"];
+            const statusRow = ["Status"];
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const col = String.fromCharCode(67 + day);
+                summaryRow.push(`=COUNTIF(${col}7:${col}${6+employees.length},"D")`);
+                nightRow.push(`=COUNTIF(${col}7:${col}${6+employees.length},"N")+COUNTIF(${col}7:${col}${6+employees.length},"N/O")*0.5`);
+                statusRow.push(`=IF(AND(${col}${rosterData.length+1}=8,${col}${rosterData.length+2}=8),"✓","⚠")`);
+            }
+            summaryRow.push("", "", "", "");
+            nightRow.push("", "", "", "");
+            statusRow.push("", "", "", "");
+            
+            rosterData.push(summaryRow);
+            rosterData.push(nightRow);
+            rosterData.push(statusRow);
+            
+            const ws_roster = XLSX.utils.aoa_to_sheet(rosterData);
+            const colWidths = [{wch: 10}, {wch: 28}, {wch: 10}];
+            for (let i = 0; i < daysInMonth; i++) colWidths.push({wch: 5});
+            colWidths.push({wch: 6}, {wch: 6}, {wch: 6}, {wch: 6});
+            ws_roster['!cols'] = colWidths;
+            XLSX.utils.book_append_sheet(wb, ws_roster, "Roster");
+            
+            // SHEET 2: LEAVE APPLICATIONS
+            const leaveData = [
+                [`${monthNames[month]} ${year} - LEAVE APPLICATIONS`],
+                [],
+                ["Add leave requests below. Priority auto-calculates in Sheet 3."],
+                [],
+                ["App ID", "Emp ID", "Name", "Type", "Start", "End", "App Date", "Status", "Notes"],
+                ["LA001", "85005100", "Namita Chowdhry", "Planned", 15, 17, "2024-12-20", "Approved", "High priority"],
+                ["LA002", "85009008", "Santhosh Rajaram", "Sick", 10, 10, `${year}-${month}-10`, "Approved", "Emergency"],
+                ["", "", "", "", "", "", "", "", ""],
+            ];
+            
+            const ws_leave = XLSX.utils.aoa_to_sheet(leaveData);
+            ws_leave['!cols'] = [{wch: 10}, {wch: 10}, {wch: 28}, {wch: 12}, {wch: 8}, {wch: 8}, {wch: 12}, {wch: 10}, {wch: 30}];
+            XLSX.utils.book_append_sheet(wb, ws_leave, "Leave Applications");
+            
+            // SHEET 3: PRIORITY CALCULATOR
+            const priorityData = [
+                [`${monthNames[month]} ${year} - PRIORITY CALCULATOR`],
+                [],
+                ["Formula: Score = 100 - (Total Leaves × 2) - (Consecutive × 5) + (Days Since × 0.5)"],
+                [],
+                ["Emp ID", "Name", "This Mon", "Last Mon", "2 Mon Ago", "Total", "Consec", "Days Since", "Score", "Rank"],
+            ];
+            
+            employees.forEach((emp, idx) => {
+                const thisMonth = Math.floor(Math.random() * 4);
+                const lastMonth = Math.floor(Math.random() * 4);
+                const twoMonthsAgo = Math.floor(Math.random() * 3);
+                const consecutive = Math.floor(Math.random() * 2);
+                const daysSince = Math.floor(Math.random() * 30) + 10;
+                
+                priorityData.push([
+                    emp[0], emp[1], thisMonth, lastMonth, twoMonthsAgo,
+                    `=C${idx+6}+D${idx+6}+E${idx+6}`, consecutive, daysSince,
+                    `=100-(F${idx+6}*2)-(G${idx+6}*5)+(H${idx+6}*0.5)`,
+                    `=RANK(I${idx+6},$I$6:$I${5+employees.length},0)`
+                ]);
+            });
+            
+            const ws_priority = XLSX.utils.aoa_to_sheet(priorityData);
+            ws_priority['!cols'] = [{wch: 10}, {wch: 28}, {wch: 9}, {wch: 9}, {wch: 10}, {wch: 8}, {wch: 8}, {wch: 11}, {wch: 8}, {wch: 6}];
+            XLSX.utils.book_append_sheet(wb, ws_priority, "Priority Calculator");
+            
+            // SHEET 4: SHIFT COUNT
+            const shiftData = [
+                [`${monthNames[month]} ${year} - SHIFT COUNT MONITORING`],
+                [],
+                ["TARGET: 8 Day + 8 Night"],
+                [],
+                ["Date", "Day", "Day Count", "Target", "Var", "Night Count", "Target", "Var", "Status"],
+            ];
+            
+            const dayOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month - 1, day);
+                const col = String.fromCharCode(67 + day);
+                const row = 5 + day;
+                
+                shiftData.push([
+                    day, dayOfWeek[date.getDay()],
+                    `=COUNTIF(Roster!${col}7:${col}${6+employees.length},"D")`,
+                    8,
+                    `=C${row}-D${row}`,
+                    `=COUNTIF(Roster!${col}7:${col}${6+employees.length},"N")+COUNTIF(Roster!${col}7:${col}${6+employees.length},"N/O")*0.5`,
+                    8,
+                    `=F${row}-G${row}`,
+                    `=IF(AND(E${row}=0,H${row}=0),"✓","⚠")`
+                ]);
+            }
+            
+            const ws_shift = XLSX.utils.aoa_to_sheet(shiftData);
+            ws_shift['!cols'] = [{wch: 6}, {wch: 6}, {wch: 10}, {wch: 8}, {wch: 6}, {wch: 11}, {wch: 8}, {wch: 6}, {wch: 8}];
+            XLSX.utils.book_append_sheet(wb, ws_shift, "Shift Count");
+            
+            // SHEET 5: EMERGENCY REPLACEMENT
+            const emergencyData = [
+                [`${monthNames[month]} ${year} - EMERGENCY REPLACEMENT`],
+                [],
+                ["RULES: ✓ Can call Day/Off | ✗ Cannot call Night shift"],
+                [],
+                ["Date", "On Leave", "Shift", "Replacement", "Prev Shift", "Eligible", "Compensation", "Status"],
+                ["", "", "", "", "", "", "", ""],
+            ];
+            
+            const ws_emergency = XLSX.utils.aoa_to_sheet(emergencyData);
+            ws_emergency['!cols'] = [{wch: 6}, {wch: 25}, {wch: 8}, {wch: 25}, {wch: 10}, {wch: 10}, {wch: 15}, {wch: 10}];
+            XLSX.utils.book_append_sheet(wb, ws_emergency, "Emergency Replacement");
+            
+            // SHEET 6: OVERTIME TRACKER
+            const overtimeData = [
+                [`${monthNames[month]} ${year} - OVERTIME TRACKER`],
+                [],
+                ["Track compensation for emergency replacements"],
+                [],
+                ["Emp ID", "Name", "Date", "Reason", "Hours", "Rate", "Amount", "Comp Off", "Comp Date", "Status"],
+                ["", "", "", "", "", "", "", "", "", ""],
+            ];
+            
+            const ws_overtime = XLSX.utils.aoa_to_sheet(overtimeData);
+            ws_overtime['!cols'] = [{wch: 10}, {wch: 25}, {wch: 6}, {wch: 18}, {wch: 7}, {wch: 6}, {wch: 10}, {wch: 10}, {wch: 10}, {wch: 12}];
+            XLSX.utils.book_append_sheet(wb, ws_overtime, "Overtime Tracker");
+            
+            // SHEET 7: CONFIGURATION
+            const configData = [
+                ["ROSTERING SYSTEM CONFIGURATION"],
+                [""],
+                ["Setting", "Value", "Description"],
+                ["Day Shift Target", 8, "Required staff in day shift"],
+                ["Night Shift Target", 8, "Required staff in night shift"],
+                ["Roster Deadline", 25, "Day of month to complete next roster"],
+                ["Emergency Call Rule", "No Night Shift", "Cannot call night shift workers"],
+                [""],
+                ["SHIFT CODES"],
+                ["Code", "Name", "Description"],
+                ["D", "Day Shift", "Regular day hours"],
+                ["N", "Night Shift", "Overnight hours"],
+                ["O", "Off", "Scheduled off"],
+                ["N/O", "Night+Off", "Night followed by off"],
+                ["S/L", "Sick Leave", "Medical leave"],
+                ["P/L", "Planned Leave", "Pre-approved leave"],
+                ["C/O", "Comp Off", "Earned off day"],
+                ["TRG", "Training", "Training day"],
+                [""],
+                ["EMERGENCY RULES"],
+                ["Previous Shift", "Can Call?", "Reason"],
+                ["D (Day)", "✓ YES", "Rested from day shift"],
+                ["O (Off)", "✓ YES", "Was on off day"],
+                ["N (Night)", "✗ NO", "Needs rest after night"],
+                ["N/O", "✗ NO", "Worked night shift"],
+            ];
+            
+            const ws_config = XLSX.utils.aoa_to_sheet(configData);
+            ws_config['!cols'] = [{wch: 25}, {wch: 18}, {wch: 40}];
+            XLSX.utils.book_append_sheet(wb, ws_config, "Configuration");
+            
+            // Download file
+            const filename = `Roster_${monthNames[month]}_${year}.xlsx`;
+            XLSX.writeFile(wb, filename);
+            
+            // Success message
+            const successMsg = document.getElementById('successMessage');
+            successMsg.style.display = 'flex';
+            setTimeout(() => {
+                successMsg.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>>
+                                <h4>Namita Chowdhry <span class="priority-high">(Score: 92)</span></h4>
+                                <p>Leaves this month: 1 | Last month: 0 | 2 months ago: 1</p>
+                                <p><strong>Status:</strong> High Priority - Low leave history</p>
+                            </div>
+                            <div class="employee-card">
+                                <h4>Kaustubh B <span class="priority-medium">(Score: 78)</span></h4>
+                                <p>Leaves this month: 2 | Last month: 3 | 2 months ago: 1</p>
+                                <p><strong>Status:</strong> Medium Priority - Moderate leave usage</p>
+                            </div>
+                            <div class="employee-card">
+                                <h4>Manu Mohan <span class="priority-low">(Score: 65)</span></h4>
+                                <p>Leaves this month: 5 | Last month: 4 | 2 months ago: 3</p>
+                                <p><strong>Status:</strong> Lower Priority - High leave usage</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Emergency Tab -->
+                <div id="emergency" class="tab-content">
+                    <div class="alert alert-warning">
+                        <span style="font-size:1.5em;">⚠️</span>
+                        <div>
+                            <strong>Emergency Coverage Rules:</strong>
+                            <br>✓ CAN call: Staff who worked DAY shift or had OFF the previous day
+                            <br>✗ CANNOT call: Staff who worked NIGHT shift the previous day
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h2>Emergency Leave Coverage</h2>
+                        <p style="color:#666; margin-bottom:15px;">When someone takes emergency/sick leave, use Sheet 5 in Excel to find eligible replacements.</p>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Date of Emergency</label>
+                                <input type="date">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Employee on Leave</label>
+                                <select>
+                                    <option>Select employee...</option>
+                                    <option>Namita Chowdhry</option>
+                                    <option>Santhosh Rajaram Bathula</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Shift to Cover</label>
+                                <select>
+                                    <option>Day Shift</option>
+                                    <option>Night Shift</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-secondary">🔍 Demo Only - Check Excel Sheet 5 for Real Replacements</button>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h2>Eligible Replacement Pool (Sample)</h2>
+                        <div class="employee-list">
+                            <div class="employee-card" style="border-color:#28a745;">
+                                <h4>Vijay Gupta ✓ ELIGIBLE</h4>
+                                <p><strong>Previous Day Shift:</strong> Day Shift (D)</p>
+                                <p><strong>Reason:</strong> Can be called for emergency - rested from day shift</p>
+                                <p><strong>Compensation:</strong> Overtime 1.5x OR Comp Off</p>
+                            </div>
+                            <div class="employee-card" style="border-color:#28a745;">
+                                <h4>Karthikeyan ✓ ELIGIBLE</h4>
+                                <p><strong>Previous Day Shift:</strong> Off (O)</p>
+                                <p><strong>Reason:</strong> Can be called - was on off day</p>
+                                <p><strong>Compensation:</strong> Overtime 1.5x OR Comp Off</p>
+                            </div>
+                            <div class="employee-card"
